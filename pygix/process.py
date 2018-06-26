@@ -59,11 +59,14 @@ class Processor(object):
         except KeyError:
             raise RuntimeError('data information not present in yaml file')
         self.file_list = get_file_list(data['infiles']['dname'],
-                                            data['infiles']['fname'],
-                                            data['infiles']['numbers'])
+                                       data['infiles']['fname'],
+                                       data['infiles']['numbers'])
 
         if 'outfiles' in data.keys():
-            raise NotImplementedError('Saving data not yet implemented')
+        #    raise NotImplementedError('Saving data not yet implemented')
+
+            self.out_file_list = make_file_list(data['outfiles']['dname'],
+                                                self.file_list)
 
         # self.bkg_dname = data['backfiles']['dname']
         # self.bkg_fname = data['backfiles']['fname']
@@ -329,6 +332,32 @@ def get_file_list(dname, fname, numbers=None):
             in_file = fname.format(i)
             file_list.append(os.path.join(dname, in_file))
     return file_list
+
+
+def make_file_list(dname, file_list):
+    """Create file list for saving processed data individually
+
+    Takes a directory path for output data (yaml file) and list of files to be
+    processed, then returns a list of file paths for saving data. File extension
+    has to be added separately.
+
+    Args:
+        dname (string): directory path from yaml file,
+        file_list (list): list with paths of files to be processed.
+
+    Returns:
+        out_file_list (list): list of full paths for savig data.
+    """
+    if not os.path.isdir(dname):
+        raise IOError('Directory does not exist!\n{}'.format(dname))
+
+    out_file_list = []
+
+    for f in file_list:
+        fname = os.path.split(f)[1]
+        basename = os.path.splitext(fname)[0]
+        out_file_list.append(os.path.join(dname, basename))
+    return out_file_list
 
 
 def init_pygix(calibration_dict):
