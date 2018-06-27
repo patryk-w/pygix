@@ -68,6 +68,11 @@ class Processor(object):
             self.out_file_list = make_file_list(data['outfiles']['dname'],
                                                 self.file_list)
 
+            self.out_file = make_outfile(data['outfiles']['dname'],
+                                         data['infiles']['dname'],
+                                         data['infiles']['fname'],
+                                         data['infiles']['numbers'])
+
         # self.bkg_dname = data['backfiles']['dname']
         # self.bkg_fname = data['backfiles']['fname']
         # self.bkg_numbers = data['backfiles']['numbers']
@@ -358,6 +363,54 @@ def make_file_list(dname, file_list):
         basename = os.path.splitext(fname)[0]
         out_file_list.append(os.path.join(dname, basename))
     return out_file_list
+
+
+def make_outfile(dname, indname, fname, numbers=None):
+    """Create path for saving all processed data in one file
+
+    Takes the out and in directory paths, filename format and (optionally) frame
+    numbers and returns a full file path. The file name is based on processed
+    file names.
+
+    Args:
+        dname (string): directory path for output data,
+        indname (string): directory path for input data,
+        fname (string): basename for images. Can be full filename or can contain
+            wildcard ('*').
+        numbers: (string, list or None): contains information on images with
+            fname to be used. If None ('*' or '00...' must be in fname), will
+            take all images. Can be an integer list of file numbers or can be a
+            string with hyphens representing ranges, e.g., '1, 3, 5, 9-15'.
+
+    Returns:
+        out_file (string): path to the output file.
+    """
+    if not os.path.isdir(dname):
+        raise IOError('Directory does not exist!\n{}'.format(dname))
+    elif (numbers is None) and ('*' not in fname):
+        raise IOError(
+            'No file numbers provided and no wildcard (*) in filename')
+
+    if (numbers is None) and ('*' in fname):
+        first = sorted(glob(os.path.join(indname, fname)))[0]
+        last = sorted(glob(os.path.join(indname, fname)))[-1]
+
+        first_base = os.path.basename(first)
+        last_base = os.path.basename(last)
+
+        first_number = first_base.strip(fname)
+        last_number = last_base.strip(fname)
+        numbers = '{}-{}'.format(first_number, last_number)
+
+    elif numbers.__class__ == list:
+        numbers = indices_to_list(numbers)
+
+    numbers = numbers.replace(' ', '')
+    fname = os.path.splitext(fname)[0]
+    fname = fname.replace('*', '_{}'.format(numbers))
+    out_file = os.path.join(dname, fname)
+
+    return out_file
 
 
 def init_pygix(calibration_dict):
